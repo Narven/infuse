@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use walkdir::WalkDir;
 
-const CONFTEST_TEMPLATE: &str = r#""""Pytest plugin: override collection using Rust (trex) for discovery."""
+const CONFTEST_TEMPLATE: &str = r#""""Pytest plugin: override collection using Rust (infuse) for discovery."""
 
 from __future__ import annotations
 
@@ -17,19 +17,19 @@ import subprocess
 from pathlib import Path
 
 
-def _get_trex_bin():
-    # TREX_BIN wins if set (used as an escape hatch / for dev builds); otherwise
-    # look up `trex` on PATH. Returns None when neither resolves to a real file.
-    env_bin = os.environ.get("TREX_BIN")
+def _get_infuse_bin():
+    # INFUSE_BIN wins if set (used as an escape hatch / for dev builds); otherwise
+    # look up `infuse` on PATH. Returns None when neither resolves to a real file.
+    env_bin = os.environ.get("INFUSE_BIN")
     if env_bin:
         return env_bin
-    return shutil.which("trex")
+    return shutil.which("infuse")
 
 
-def _run_trex_collect(rootdir: Path, trex_bin: str) -> list | None:
+def _run_infuse_collect(rootdir: Path, infuse_bin: str) -> list | None:
     try:
         result = subprocess.run(
-            [trex_bin, "collect", str(rootdir)],
+            [infuse_bin, "collect", str(rootdir)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -60,24 +60,24 @@ def pytest_configure(config):
         rootdir = Path.cwd()
     else:
         rootdir = Path(rootdir)
-    trex_bin = _get_trex_bin()
-    if not trex_bin or not Path(trex_bin).exists():
+    infuse_bin = _get_infuse_bin()
+    if not infuse_bin or not Path(infuse_bin).exists():
         return
-    manifest = _run_trex_collect(rootdir, trex_bin)
+    manifest = _run_infuse_collect(rootdir, infuse_bin)
     if manifest is None:
         return
-    config._trex_manifest = manifest
-    config._trex_allowed_files, config._trex_allowed_dirs = _allowed_sets_from_manifest(
+    config._infuse_manifest = manifest
+    config._infuse_allowed_files, config._infuse_allowed_dirs = _allowed_sets_from_manifest(
         manifest
     )
 
 
 def pytest_ignore_collect(collection_path, config):
-    manifest = getattr(config, "_trex_manifest", None)
+    manifest = getattr(config, "_infuse_manifest", None)
     if manifest is None:
         return False
-    allowed_files = getattr(config, "_trex_allowed_files", set())
-    allowed_dirs = getattr(config, "_trex_allowed_dirs", set())
+    allowed_files = getattr(config, "_infuse_allowed_files", set())
+    allowed_dirs = getattr(config, "_infuse_allowed_dirs", set())
     rootdir = Path(config.rootpath).resolve()
     try:
         rel = collection_path.resolve().relative_to(rootdir)
@@ -92,21 +92,21 @@ def pytest_ignore_collect(collection_path, config):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    manifest = getattr(config, "_trex_manifest", None)
+    manifest = getattr(config, "_infuse_manifest", None)
     if manifest is None:
-        trex_bin = _get_trex_bin()
+        infuse_bin = _get_infuse_bin()
         rootdir = config.rootpath
         if not rootdir:
             rootdir = Path.cwd()
         else:
             rootdir = Path(rootdir)
-        if not trex_bin or not Path(trex_bin).exists():
+        if not infuse_bin or not Path(infuse_bin).exists():
             return
-        manifest = _run_trex_collect(rootdir, trex_bin)
+        manifest = _run_infuse_collect(rootdir, infuse_bin)
         if manifest is None:
             return
-        config._trex_manifest = manifest
-        config._trex_allowed_files, config._trex_allowed_dirs = _allowed_sets_from_manifest(
+        config._infuse_manifest = manifest
+        config._infuse_allowed_files, config._infuse_allowed_dirs = _allowed_sets_from_manifest(
             manifest
         )
 
@@ -123,7 +123,7 @@ def pytest_collection_modifyitems(session, config, items):
 "#;
 
 #[derive(Parser)]
-#[command(name = "trex")]
+#[command(name = "infuse")]
 #[command(about = "Rust-powered pytest collection")]
 struct Cli {
     #[command(subcommand)]
@@ -294,7 +294,7 @@ fn run_collect(root_dir: &Path, pattern: &str) {
 
 fn run_init(dir: &Path) {
     if !dir.is_dir() {
-        eprintln!("trex init: not a directory: {}", dir.display());
+        eprintln!("infuse init: not a directory: {}", dir.display());
         std::process::exit(1);
     }
     let conftest_path = dir.join("conftest.py");
@@ -306,7 +306,7 @@ fn run_init(dir: &Path) {
     let _ = io::stderr().flush();
     let mut line = String::new();
     if io::stdin().read_line(&mut line).is_err() {
-        eprintln!("trex init: could not read input");
+        eprintln!("infuse init: could not read input");
         std::process::exit(1);
     }
     let answer = line.trim().to_lowercase();
@@ -315,7 +315,7 @@ fn run_init(dir: &Path) {
         return;
     }
     if fs::write(&conftest_path, CONFTEST_TEMPLATE).is_err() {
-        eprintln!("trex init: failed to write {}", conftest_path.display());
+        eprintln!("infuse init: failed to write {}", conftest_path.display());
         std::process::exit(1);
     }
     eprintln!("Wrote {}", conftest_path.display());
@@ -326,7 +326,7 @@ fn main() {
     match &cli.command {
         Commands::Collect { root_dir, pattern } => {
             if !root_dir.is_dir() {
-                eprintln!("trex: root_dir is not a directory: {}", root_dir.display());
+                eprintln!("infuse: root_dir is not a directory: {}", root_dir.display());
                 std::process::exit(1);
             }
             run_collect(root_dir, pattern);

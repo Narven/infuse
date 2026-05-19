@@ -1,14 +1,14 @@
-//! Integration tests for `trex init`: stdin n/y and conftest creation.
+//! Integration tests for `infuse init`: stdin n/y and conftest creation.
 
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-const TREX_BIN: &str = env!("CARGO_BIN_EXE_trex");
+const INFUSE_BIN: &str = env!("CARGO_BIN_EXE_infuse");
 
 #[test]
 fn init_with_n_does_not_create_conftest() {
     let tmp = tempfile::tempdir().unwrap();
-    let mut child = Command::new(TREX_BIN)
+    let mut child = Command::new(INFUSE_BIN)
         .arg("init")
         .arg(tmp.path().to_str().unwrap())
         .stdin(Stdio::piped())
@@ -28,7 +28,7 @@ fn init_with_n_does_not_create_conftest() {
 #[test]
 fn init_with_y_creates_conftest() {
     let tmp = tempfile::tempdir().unwrap();
-    let mut child = Command::new(TREX_BIN)
+    let mut child = Command::new(INFUSE_BIN)
         .arg("init")
         .arg(tmp.path().to_str().unwrap())
         .stdin(Stdio::piped())

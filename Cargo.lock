@@ -206,6 +206,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "infuse"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "walkdir",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -421,18 +433,6 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys",
-]
-
-[[package]]
-name = "trex"
-version = "0.1.0"
-dependencies = [
- "clap",
- "regex",
- "serde",
- "serde_json",
- "tempfile",
- "walkdir",
 ]
 
 [[package]]

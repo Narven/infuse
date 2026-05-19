@@ -1,5 +1,5 @@
 [package]
-name = "trex"
+name = "infuse"
 version = "0.1.0"
 edition = "2024"
 description = "Rust-powered pytest collection: drive test discovery and ordering from a fast native binary"

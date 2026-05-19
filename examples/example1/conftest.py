@@ -1,4 +1,4 @@
-"""Pytest plugin: override collection using Rust (trex) for discovery."""
+"""Pytest plugin: override collection using Rust (infuse) for discovery."""
 
 from __future__ import annotations
 
@@ -9,19 +9,19 @@ import subprocess
 from pathlib import Path
 
 
-def _get_trex_bin():
-    # TREX_BIN wins if set (used as an escape hatch / for dev builds); otherwise
-    # look up `trex` on PATH. Returns None when neither resolves to a real file.
-    env_bin = os.environ.get("TREX_BIN")
+def _get_infuse_bin():
+    # INFUSE_BIN wins if set (used as an escape hatch / for dev builds); otherwise
+    # look up `infuse` on PATH. Returns None when neither resolves to a real file.
+    env_bin = os.environ.get("INFUSE_BIN")
     if env_bin:
         return env_bin
-    return shutil.which("trex")
+    return shutil.which("infuse")
 
 
-def _run_trex_collect(rootdir: Path, trex_bin: str) -> list | None:
+def _run_infuse_collect(rootdir: Path, infuse_bin: str) -> list | None:
     try:
         result = subprocess.run(
-            [trex_bin, "collect", str(rootdir)],
+            [infuse_bin, "collect", str(rootdir)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -52,24 +52,24 @@ def pytest_configure(config):
         rootdir = Path.cwd()
     else:
         rootdir = Path(rootdir)
-    trex_bin = _get_trex_bin()
-    if not trex_bin or not Path(trex_bin).exists():
+    infuse_bin = _get_infuse_bin()
+    if not infuse_bin or not Path(infuse_bin).exists():
         return
-    manifest = _run_trex_collect(rootdir, trex_bin)
+    manifest = _run_infuse_collect(rootdir, infuse_bin)
     if manifest is None:
         return
-    config._trex_manifest = manifest
-    config._trex_allowed_files, config._trex_allowed_dirs = _allowed_sets_from_manifest(
+    config._infuse_manifest = manifest
+    config._infuse_allowed_files, config._infuse_allowed_dirs = _allowed_sets_from_manifest(
         manifest
     )
 
 
 def pytest_ignore_collect(collection_path, config):
-    manifest = getattr(config, "_trex_manifest", None)
+    manifest = getattr(config, "_infuse_manifest", None)
     if manifest is None:
         return False
-    allowed_files = getattr(config, "_trex_allowed_files", set())
-    allowed_dirs = getattr(config, "_trex_allowed_dirs", set())
+    allowed_files = getattr(config, "_infuse_allowed_files", set())
+    allowed_dirs = getattr(config, "_infuse_allowed_dirs", set())
     rootdir = Path(config.rootpath).resolve()
     try:
         rel = collection_path.resolve().relative_to(rootdir)
@@ -84,21 +84,21 @@ def pytest_ignore_collect(collection_path, config):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    manifest = getattr(config, "_trex_manifest", None)
+    manifest = getattr(config, "_infuse_manifest", None)
     if manifest is None:
-        trex_bin = _get_trex_bin()
+        infuse_bin = _get_infuse_bin()
         rootdir = config.rootpath
         if not rootdir:
             rootdir = Path.cwd()
         else:
             rootdir = Path(rootdir)
-        if not trex_bin or not Path(trex_bin).exists():
+        if not infuse_bin or not Path(infuse_bin).exists():
             return
-        manifest = _run_trex_collect(rootdir, trex_bin)
+        manifest = _run_infuse_collect(rootdir, infuse_bin)
         if manifest is None:
             return
-        config._trex_manifest = manifest
-        config._trex_allowed_files, config._trex_allowed_dirs = _allowed_sets_from_manifest(
+        config._infuse_manifest = manifest
+        config._infuse_allowed_files, config._infuse_allowed_dirs = _allowed_sets_from_manifest(
             manifest
         )
 

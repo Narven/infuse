@@ -1,9 +1,9 @@
-//! Integration tests: run the trex binary and assert on stdout/exit code.
+//! Integration tests: run the infuse binary and assert on stdout/exit code.
 
 use std::io::Write;
 use std::process::Command;
 
-const TREX_BIN: &str = env!("CARGO_BIN_EXE_trex");
+const INFUSE_BIN: &str = env!("CARGO_BIN_EXE_infuse");
 
 #[test]
 fn collect_success_returns_json_manifest() {
@@ -14,7 +14,7 @@ fn collect_success_returns_json_manifest() {
         .write_all(b"def test_ok(): pass")
         .unwrap();
 
-    let out = Command::new(TREX_BIN)
+    let out = Command::new(INFUSE_BIN)
         .args(["collect", tmp.path().to_str().unwrap()])
         .output()
         .unwrap();
@@ -32,7 +32,7 @@ fn collect_success_returns_json_manifest() {
 
 #[test]
 fn collect_invalid_dir_exits_non_zero() {
-    let out = Command::new(TREX_BIN)
+    let out = Command::new(INFUSE_BIN)
         .args(["collect", "/nonexistent/dir/12345"])
         .output()
         .unwrap();

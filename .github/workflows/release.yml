@@ -11,11 +11,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: trex-linux-x86_64
+            artifact_name: infuse-linux-x86_64
           - os: macos-latest
-            artifact_name: trex-macos-x86_64
+            artifact_name: infuse-macos-x86_64
           - os: windows-latest
-            artifact_name: trex-windows-x86_64.exe
+            artifact_name: infuse-windows-x86_64.exe
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,11 +32,11 @@ jobs:
 
       - name: Prepare artifact (Unix)
         if: matrix.os != 'windows-latest'
-        run: cp target/release/trex ${{ matrix.artifact_name }}
+        run: cp target/release/infuse ${{ matrix.artifact_name }}
 
       - name: Prepare artifact (Windows)
         if: matrix.os == 'windows-latest'
-        run: cp target/release/trex.exe ${{ matrix.artifact_name }}
+        run: cp target/release/infuse.exe ${{ matrix.artifact_name }}
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2

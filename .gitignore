@@ -54,3 +54,6 @@ htmlcov/
 .env
 .env.local
 *.local
+
+# Local task list (per-clone, not committed)
+TASK.md

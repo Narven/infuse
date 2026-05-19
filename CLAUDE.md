@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session bootstrap
+
+**At the start of every session, read `TASK.md` if it exists at the repo root.** It is a gitignored, per-clone task list of outstanding work in this repo — treat any open item there as live context, and update it as items get done or new ones come up.
+
 ## What this project is
 
 `infuse` is a Rust CLI that speeds up **pytest's collection phase**. Pytest still imports and runs the tests — infuse only decides *which files* pytest looks at and *in what order*. It is a single-binary tool (`src/main.rs`) plus an embedded `conftest.py` template that wires pytest into it.

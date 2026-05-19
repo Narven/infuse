@@ -11,6 +11,11 @@
 #   hooked pytest_ignore_collect so Python skips files not in trex's manifest.
 cd "$(dirname "$0")"
 
+# Point the conftest at this repo's dev build of trex. The conftest itself no
+# longer looks up `../../target/release/trex` relative to its own location — it
+# only honors TREX_BIN or `trex` on PATH — so we set it explicitly here.
+export TREX_BIN="$(cd ../.. && pwd)/target/release/trex"
+
 # Single-line timing so we don't rely on grep (which can break the script)
 export TIMEFORMAT='real %R s'
 

@@ -10,16 +10,12 @@ from pathlib import Path
 
 
 def _get_trex_bin():
-    if os.environ.get("TREX_BIN"):
-        return os.environ["TREX_BIN"]
-    conftest_dir = Path(__file__).resolve().parent
-    default = (conftest_dir / "../../target/release/trex").resolve()
-    if default.exists():
-        return str(default)
-    trex_on_path = shutil.which("trex")
-    if trex_on_path:
-        return trex_on_path
-    return str(default)
+    # TREX_BIN wins if set (used as an escape hatch / for dev builds); otherwise
+    # look up `trex` on PATH. Returns None when neither resolves to a real file.
+    env_bin = os.environ.get("TREX_BIN")
+    if env_bin:
+        return env_bin
+    return shutil.which("trex")
 
 
 def _run_trex_collect(rootdir: Path, trex_bin: str) -> list | None:
@@ -57,7 +53,7 @@ def pytest_configure(config):
     else:
         rootdir = Path(rootdir)
     trex_bin = _get_trex_bin()
-    if not Path(trex_bin).exists():
+    if not trex_bin or not Path(trex_bin).exists():
         return
     manifest = _run_trex_collect(rootdir, trex_bin)
     if manifest is None:
@@ -96,7 +92,7 @@ def pytest_collection_modifyitems(session, config, items):
             rootdir = Path.cwd()
         else:
             rootdir = Path(rootdir)
-        if not Path(trex_bin).exists():
+        if not trex_bin or not Path(trex_bin).exists():
             return
         manifest = _run_trex_collect(rootdir, trex_bin)
         if manifest is None:

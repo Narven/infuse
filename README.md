@@ -40,8 +40,8 @@ No other workflow changes. No extra flags. You just get faster collection.
 Build the binary and make it available to your projects:
 
 ```bash
-git clone https://github.com/narven/trex.git
-cd trex
+git clone https://github.com/narven/infuse.git
+cd infuse
 cargo build --release
 ```
 

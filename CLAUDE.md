@@ -8,8 +8,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Beta / pre-1.0. Edition 2024, MSRV 1.85.
 
-> **Naming history:** the project was originally called `trex` and was renamed to `infuse`. The Cargo package, binary, CLI, and env var (`INFUSE_BIN`) all use the new name. The GitHub repository URL is intentionally still `github.com/narven/trex` — leave Cargo.toml's `repository` / `homepage` / `documentation` fields alone unless asked. If you find a stray `trex` reference, it's a miss from the rename; rename it.
-
 ## Non-negotiable design goals
 
 These two goals constrain every change. If a change can't satisfy both, push back or ask before merging it.

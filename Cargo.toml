@@ -1,16 +1,20 @@
 [package]
-name = "infuse"
+name = "pytest-infuse"
 version = "0.1.0"
 edition = "2024"
 description = "Rust-powered pytest collection: drive test discovery and ordering from a fast native binary"
 license = "MIT"
-repository = "https://github.com/narven/infuse"
-homepage = "https://github.com/narven/infuse"
-documentation = "https://github.com/narven/infuse#readme"
+repository = "https://github.com/narven/pytest-infuse"
+homepage = "https://github.com/narven/pytest-infuse"
+documentation = "https://github.com/narven/pytest-infuse#readme"
 keywords = ["pytest", "testing", "test-discovery", "rust"]
 categories = ["development-tools::testing"]
 readme = "README.md"
 rust-version = "1.85.0"
+
+[[bin]]
+name = "infuse"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

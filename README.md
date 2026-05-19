@@ -1,10 +1,12 @@
-# infuse
+# pytest-infuse
 
 Rust-powered pytest collection. Run your tests the same way you always do — just faster.
 
-**Beta / work in progress** — infuse is still in early stages. It works for typical pytest layouts, but expect rough edges and changes as it evolves.
+The package is `pytest-infuse`; the binary it installs is called `infuse`.
 
-### What infuse does
+**Beta / work in progress** — pytest-infuse is still in early stages. It works for typical pytest layouts, but expect rough edges and changes as it evolves.
+
+### What it does
 
 Pytest’s normal lifecycle is: **discover** which files might be tests, **collect** them (import modules, find test functions and classes), then **run** the tests. The discovery and collection steps are done in Python and can be slow on large trees.
 
@@ -40,8 +42,8 @@ No other workflow changes. No extra flags. You just get faster collection.
 Build the binary and make it available to your projects:
 
 ```bash
-git clone https://github.com/narven/infuse.git
-cd infuse
+git clone https://github.com/narven/pytest-infuse.git
+cd pytest-infuse
 cargo build --release
 ```
 

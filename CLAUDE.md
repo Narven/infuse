@@ -65,7 +65,7 @@ How the plugin hooks pytest:
 2. `pytest_ignore_collect` returns `True` for any path *not* in those sets — this is where pytest is actually saved work, because it never descends into / imports those files.
 3. `pytest_collection_modifyitems` filters items down to nodeids present in trex's manifest and reorders them to match trex's order.
 
-Binary resolution order in `_get_trex_bin`: `TREX_BIN` env var → `../../target/release/trex` relative to the conftest → `shutil.which("trex")`. **If the binary is missing or fails, all hooks no-op and pytest collects normally** — never break the user's test run.
+Binary resolution order in `_get_trex_bin`: `TREX_BIN` env var (honored strictly — if set to a path that doesn't exist, we do NOT fall through to PATH; we fall back to default pytest) → otherwise `shutil.which("trex")`. **If the binary is missing or fails, all hooks no-op and pytest collects normally** — never break the user's test run. `examples/example1/benchmark_collection.sh` sets `TREX_BIN` explicitly to this repo's `target/release/trex`; there is no implicit "look up a path next to the conftest" lookup.
 
 ### Constraints that shape the design
 

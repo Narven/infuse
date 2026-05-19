@@ -179,15 +179,17 @@ fn glob_to_regex(glob: &str) -> regex::Regex {
 }
 
 fn extract_tests_from_source(source: &str) -> Vec<String> {
-    let class_re = Regex::new(r"^\s*class (Test\w+)\s*:").unwrap();
+    let class_re = Regex::new(r"^\s*class (Test\w+)\s*[(:]").unwrap();
+    let any_class_re = Regex::new(r"^(\s*)class \w+").unwrap();
     let test_def_re = Regex::new(r"^\s*def (test_\w+)\s*\(").unwrap();
     let any_def_re = Regex::new(r"^(\s*)def \w+\s*\(").unwrap();
 
     let mut tests = Vec::new();
     let mut current_class: Option<String> = None;
-    // Indent of the innermost enclosing `def`. Any deeper `def test_*` is a closure,
-    // which pytest does not collect, so we drop it.
-    let mut function_indent: Option<usize> = None;
+    // Indent of the innermost enclosing scope where `def test_*` should be
+    // suppressed: any `def` (closure parent) or any non-`Test*` class (whose
+    // methods pytest does not collect).
+    let mut skip_indent: Option<usize> = None;
 
     for line in source.lines() {
         if line.trim().is_empty() {
@@ -195,10 +197,16 @@ fn extract_tests_from_source(source: &str) -> Vec<String> {
         }
         let indent = line.len() - line.trim_start().len();
 
-        if let Some(f_indent) = function_indent {
-            if indent <= f_indent {
-                function_indent = None;
+        if let Some(s_indent) = skip_indent {
+            if indent <= s_indent {
+                skip_indent = None;
             }
+        }
+
+        // Any indent-0 statement that isn't itself starting a Test* class
+        // ends the previous top-level class's body, so its name is stale.
+        if indent == 0 {
+            current_class = None;
         }
 
         if let Some(cap) = class_re.captures(line) {
@@ -211,19 +219,25 @@ fn extract_tests_from_source(source: &str) -> Vec<String> {
         if let Some(cap) = test_def_re.captures(line) {
             let test_name = cap[1].to_string();
             if indent == 0 {
-                current_class = None;
                 tests.push(test_name);
-            } else if let Some(ref class_name) = current_class {
-                tests.push(format!("{}::{}", class_name, test_name));
-            } else if function_indent.is_none() {
-                tests.push(test_name);
+            } else if skip_indent.is_none() {
+                if let Some(ref class_name) = current_class {
+                    tests.push(format!("{}::{}", class_name, test_name));
+                } else {
+                    tests.push(test_name);
+                }
             }
-            function_indent = Some(indent);
+            skip_indent = Some(indent);
             continue;
         }
 
         if let Some(cap) = any_def_re.captures(line) {
-            function_indent = Some(cap[1].len());
+            skip_indent = Some(cap[1].len());
+            continue;
+        }
+
+        if let Some(cap) = any_class_re.captures(line) {
+            skip_indent = Some(cap[1].len());
         }
     }
 
@@ -406,6 +420,65 @@ def helper():
         pass
 "#;
         assert!(extract_tests_from_source(source).is_empty());
+    }
+
+    #[test]
+    fn extract_tests_skips_methods_of_non_test_class() {
+        // A non-Test class following a Test class must NOT inherit the Test*
+        // class context — its `def test_*` methods are not pytest tests.
+        let source = r#"
+class TestFoo:
+    def test_a(self):
+        pass
+
+class _Helper:
+    def test_x(self):
+        pass
+"#;
+        assert_eq!(extract_tests_from_source(source), vec!["TestFoo::test_a"]);
+    }
+
+    #[test]
+    fn extract_tests_top_level_def_ends_class_context() {
+        // A top-level non-test `def` between a Test class and a later
+        // module-level `def test_*` must not leak the prior class name.
+        let source = r#"
+class TestFoo:
+    pass
+
+def some_helper():
+    pass
+
+if True:
+    def test_x():
+        pass
+"#;
+        assert_eq!(extract_tests_from_source(source), vec!["test_x"]);
+    }
+
+    #[test]
+    fn extract_tests_class_with_base() {
+        // Test classes can declare bases — class_re must accept `(` after the
+        // name, not only `:`.
+        let source = r#"
+class TestFoo(unittest.TestCase):
+    def test_a(self):
+        pass
+"#;
+        assert_eq!(extract_tests_from_source(source), vec!["TestFoo::test_a"]);
+    }
+
+    #[test]
+    fn extract_tests_closure_inside_test_method_is_dropped() {
+        // A nested `def test_inner` inside a real test method is a closure,
+        // not a method of the Test class — pytest does not collect it.
+        let source = r#"
+class TestFoo:
+    def test_a(self):
+        def test_inner():
+            pass
+"#;
+        assert_eq!(extract_tests_from_source(source), vec!["TestFoo::test_a"]);
     }
 
     #[test]

@@ -180,13 +180,26 @@ fn glob_to_regex(glob: &str) -> regex::Regex {
 
 fn extract_tests_from_source(source: &str) -> Vec<String> {
     let class_re = Regex::new(r"^\s*class (Test\w+)\s*:").unwrap();
-    let def_re = Regex::new(r"^\s*def (test_\w+)\s*\(").unwrap();
+    let test_def_re = Regex::new(r"^\s*def (test_\w+)\s*\(").unwrap();
+    let any_def_re = Regex::new(r"^(\s*)def \w+\s*\(").unwrap();
 
     let mut tests = Vec::new();
     let mut current_class: Option<String> = None;
+    // Indent of the innermost enclosing `def`. Any deeper `def test_*` is a closure,
+    // which pytest does not collect, so we drop it.
+    let mut function_indent: Option<usize> = None;
 
     for line in source.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
         let indent = line.len() - line.trim_start().len();
+
+        if let Some(f_indent) = function_indent {
+            if indent <= f_indent {
+                function_indent = None;
+            }
+        }
 
         if let Some(cap) = class_re.captures(line) {
             if indent == 0 {
@@ -195,16 +208,22 @@ fn extract_tests_from_source(source: &str) -> Vec<String> {
             continue;
         }
 
-        if let Some(cap) = def_re.captures(line) {
+        if let Some(cap) = test_def_re.captures(line) {
             let test_name = cap[1].to_string();
-            if indent > 0 {
-                if let Some(ref class_name) = current_class {
-                    tests.push(format!("{}::{}", class_name, test_name));
-                }
-            } else {
+            if indent == 0 {
                 current_class = None;
                 tests.push(test_name);
+            } else if let Some(ref class_name) = current_class {
+                tests.push(format!("{}::{}", class_name, test_name));
+            } else if function_indent.is_none() {
+                tests.push(test_name);
             }
+            function_indent = Some(indent);
+            continue;
+        }
+
+        if let Some(cap) = any_def_re.captures(line) {
+            function_indent = Some(cap[1].len());
         }
     }
 
@@ -365,6 +384,28 @@ class TestFoo:
         assert!(extract_tests_from_source("").is_empty());
         assert!(extract_tests_from_source("def foo(): pass").is_empty());
         assert!(extract_tests_from_source("class Bar: pass").is_empty());
+    }
+
+    #[test]
+    fn extract_tests_indented_under_block_collected_as_top_level() {
+        // pytest collects `test_foo` here because it's bound at module level after the if runs.
+        let source = r#"
+if True:
+    def test_foo():
+        pass
+"#;
+        assert_eq!(extract_tests_from_source(source), vec!["test_foo"]);
+    }
+
+    #[test]
+    fn extract_tests_closure_inside_function_is_dropped() {
+        // pytest does NOT collect closures defined inside another function.
+        let source = r#"
+def helper():
+    def test_inner():
+        pass
+"#;
+        assert!(extract_tests_from_source(source).is_empty());
     }
 
     #[test]

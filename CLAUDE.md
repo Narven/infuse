@@ -70,14 +70,15 @@ Binary resolution order in `_get_trex_bin`: `TREX_BIN` env var → `../../target
 ### Constraints that shape the design
 
 - **Parser is line-and-regex, not AST.** `extract_tests_from_source` tracks two pieces of state as it walks lines:
-  - `current_class`: the most recent `class Test*:` *at indent 0* (nested classes do not update it — `extract_tests_nested_class_current_behavior` pins that nested `def`s are attributed to the outer class).
-  - `function_indent`: the indent of the innermost enclosing `def` (any function, not just tests). Cleared on the first non-blank line at indent ≤ that value. Used to drop closure-style `def test_*` that pytest would not collect.
+  - `current_class`: the most recent `class Test*` at indent 0 (matched whether followed by `:` or `(Base):`). Cleared on the first indent-0 non-blank line that isn't itself a new `Test*` class — so the class body's "end" is recognised by structure, not just by seeing another `def test_*`. Nested `Test*` classes do not update it — `extract_tests_nested_class_current_behavior` pins that nested `def`s are attributed to the outer class.
+  - `skip_indent`: indent of the innermost enclosing scope where a `def test_*` must be dropped — any `def` (closure parent) or any non-`Test*` class (whose methods pytest does not collect). Cleared on the first non-blank line at indent ≤ that value.
 
-  Decision for `def test_*`: indent 0 → top-level test; else if `current_class` is set → `Class::name`; else if `function_indent` is None → top-level test (covers `if:` / `try:` / `with:` blocks at module level); else drop (closure inside a function).
+  Decision for `def test_*`: indent 0 → top-level test (and class context is now stale anyway); else if `skip_indent` is set → drop (closure or non-Test class method); else if `current_class` is set → `Class::name`; else → top-level test (covers `if:` / `try:` / `with:` blocks at module level).
+
+  The order of those branches matters: `skip_indent` is checked *before* `current_class` so that nested non-Test classes and closures inside test methods win over an outer `Test*` class.
 
   Limitations to be aware of when touching this:
-  - `class TestFoo(unittest.TestCase):` is **not** matched — the class regex requires `:` directly after the name. Real-world subclassing won't be picked up.
-  - `current_class` is only reset when an indent-0 `def test_*` is seen. A subsequent non-Test top-level class (e.g. `class _Helper:`) does not clear it, so indented test methods of that class will be wrongly attributed to the prior `Test*` class. Open gap, not yet fixed.
+  - Multi-line class headers like `class TestFoo(\n    Base,\n):` set `current_class` on the opening line, but the closing `):` is an indent-0 statement that clears it again. Test methods after such a header will be missed.
   - `async def test_*` is not matched.
   - `def test_*` inside a string literal or docstring will be falsely matched.
 - **NodeId match is exact.** The plugin filters by `f"{file}::{test_id}"` against `item.nodeid`. Parametrized IDs like `test_foo[case1]` are not in trex's manifest and will be filtered out. Be careful when changing the filter — `modifyitems` is what hides tests, `ignore_collect` is what saves time.

@@ -22,7 +22,10 @@ fn init_with_n_does_not_create_conftest() {
     assert!(out.status.success());
 
     let conftest = tmp.path().join("conftest.py");
-    assert!(!conftest.exists(), "conftest.py should not be created when user says n");
+    assert!(
+        !conftest.exists(),
+        "conftest.py should not be created when user says n"
+    );
 }
 
 #[test]
@@ -39,12 +42,22 @@ fn init_with_y_creates_conftest() {
 
     child.stdin.as_mut().unwrap().write_all(b"y\n").unwrap();
     let out = child.wait_with_output().unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 
     let conftest = tmp.path().join("conftest.py");
-    assert!(conftest.exists(), "conftest.py should be created when user says y");
+    assert!(
+        conftest.exists(),
+        "conftest.py should be created when user says y"
+    );
     let content = std::fs::read_to_string(&conftest).unwrap();
-    assert!(content.contains("pytest_configure"), "conftest should contain pytest_configure");
+    assert!(
+        content.contains("pytest_configure"),
+        "conftest should contain pytest_configure"
+    );
 
     // The generated file must be valid Python — `python -c "compile(...)"`
     // catches malformed templates (e.g. raw-string delimiter mistakes).

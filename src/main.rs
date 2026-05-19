@@ -326,7 +326,10 @@ fn main() {
     match &cli.command {
         Commands::Collect { root_dir, pattern } => {
             if !root_dir.is_dir() {
-                eprintln!("infuse: root_dir is not a directory: {}", root_dir.display());
+                eprintln!(
+                    "infuse: root_dir is not a directory: {}",
+                    root_dir.display()
+                );
                 std::process::exit(1);
             }
             run_collect(root_dir, pattern);

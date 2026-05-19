@@ -19,7 +19,11 @@ fn collect_success_returns_json_manifest() {
         .output()
         .unwrap();
 
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let stdout = String::from_utf8(out.stdout).unwrap();
     let manifest: Vec<serde_json::Value> = serde_json::from_str(&stdout).unwrap();
     assert_eq!(manifest.len(), 1);

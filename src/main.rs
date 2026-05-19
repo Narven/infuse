@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use walkdir::WalkDir;
 
-const CONFTEST_TEMPLATE: &str = r#"""Pytest plugin: override collection using Rust (trex) for discovery."""
+const CONFTEST_TEMPLATE: &str = r#""""Pytest plugin: override collection using Rust (trex) for discovery."""
 
 from __future__ import annotations
 

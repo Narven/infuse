@@ -45,4 +45,20 @@ fn init_with_y_creates_conftest() {
     assert!(conftest.exists(), "conftest.py should be created when user says y");
     let content = std::fs::read_to_string(&conftest).unwrap();
     assert!(content.contains("pytest_configure"), "conftest should contain pytest_configure");
+
+    // The generated file must be valid Python — `python -c "compile(...)"`
+    // catches malformed templates (e.g. raw-string delimiter mistakes).
+    let py = Command::new("python3")
+        .args([
+            "-c",
+            "import sys; compile(open(sys.argv[1]).read(), sys.argv[1], 'exec')",
+            conftest.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        py.status.success(),
+        "generated conftest.py failed to compile as Python: {}",
+        String::from_utf8_lossy(&py.stderr)
+    );
 }
